@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    working_dir: /app/source
+    volumes:
+      - ./source:/app/source
+      - /app/node_modules
+    ports:
+      - "8080:8080"
+    environment:
+      - CHOKIDAR_USEPOLLING=true

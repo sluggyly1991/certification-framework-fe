@@ -1,0 +1,10 @@
+FROM node:18-alpine
+
+WORKDIR /app/source
+
+# dependencies installieren
+COPY source/package.json source/yarn.lock ./
+RUN yarn install
+
+# Code wird später per volume eingebunden
+CMD ["yarn", "serve", "--host", "0.0.0.0"]
