@@ -6,6 +6,7 @@ export default {
     state: {
         settings: {},
         loaded: false,
+        needsReload: false
     },
 
     mutations: {
@@ -15,6 +16,9 @@ export default {
         },
         UPDATE(state, { key, value }) {
             state.settings[key] = value
+        },
+        setNeedsReload(state, value) {
+            state.needsReload = value
         }
     },
 

@@ -13,7 +13,8 @@ import {
   BLink,
   BFormInput,
   BFormCheckbox,
-  BButton
+  BButton,
+  BModal
 } from "bootstrap-vue-next";
 
 export default {
@@ -41,7 +42,15 @@ export default {
       searchQuery: "",
 
       // Admin
-      isAdmin: true
+      isAdmin: true,
+
+      // Modals
+      showDeleteModal: false,
+      showDisableModal: false,
+      showEnableModal: false,   // 🔵 NEU: Aktivieren-Modal
+      memberToDelete: null,
+      memberToDisable: null,
+      memberToEnable: null      // 🔵 NEU
     };
   },
 
@@ -117,6 +126,70 @@ export default {
       this.$router.push(`/members/${id}`);
     },
 
+    editMember(id) {
+      this.$router.push(`/members/edit/${id}`);
+    },
+
+    disableMember(member) {
+      this.memberToDisable = member;
+      this.showDisableModal = true;
+    },
+
+    // 🔵 NEU: Aktivieren-Flow
+    enableMember(member) {
+      this.memberToEnable = member;
+      this.showEnableModal = true;
+    },
+
+    openDeleteModal(member) {
+      this.memberToDelete = member;
+      this.showDeleteModal = true;
+    },
+
+    async confirmDelete() {
+      try {
+        await axios.delete(`/members/${this.memberToDelete.id}`);
+        this.showDeleteModal = false;
+        this.memberToDelete = null;
+        await this.fetchMembers();
+      } catch (e) {
+        console.error(e);
+        alert("Fehler beim Löschen des Members.");
+      }
+    },
+
+    async confirmDisable() {
+      try {
+        await axios.post(`/members/${this.memberToDisable.id}/disable`);
+        this.showDisableModal = false;
+        this.memberToDisable = null;
+        await this.fetchMembers();
+      } catch (e) {
+        console.error(e);
+        alert("Fehler beim Deaktivieren.");
+      }
+    },
+
+    // 🔵 NEU: Aktivieren-Request
+    async confirmEnable() {
+      try {
+        await axios.post(`/members/${this.memberToEnable.id}/enable`);
+        this.showEnableModal = false;
+        this.memberToEnable = null;
+        await this.fetchMembers();
+      } catch (e) {
+        console.error(e);
+        alert("Fehler beim Aktivieren.");
+      }
+    },
+
+    getMemberDisplayName(member) {
+      if (!member) return "";
+      const nameCol = this.columns.find(c => c.source === "name");
+      if (!nameCol) return member.id;
+      return member.fields[nameCol.id] || member.id;
+    },
+
     addField() {
       if (!this.newField) return;
 
@@ -152,7 +225,6 @@ export default {
       Sortable.create(el, {
         handle: ".drag-handle",
         animation: 150,
-
         onEnd: evt => {
           const moved = this.editColumns.splice(evt.oldIndex, 1)[0];
           this.editColumns.splice(evt.newIndex, 0, moved);
@@ -189,14 +261,21 @@ export default {
     BLink,
     BFormInput,
     BFormCheckbox,
-    BButton
+    BButton,
+    BModal
   }
 };
 </script>
 
 <template>
   <Layout>
-    <PageHeader title="Mitglieder" pageTitle="Praxisnetz" />
+    <PageHeader
+        :title="$t('t-members-list')"
+        :breadcrumbs="[
+        { label: $t('t-dashboard'), to: '/' },
+        { label: $t('t-members-list'), active: true }
+      ]"
+    />
 
     <BRow>
       <BCol lg="12">
@@ -289,8 +368,84 @@ export default {
             </div>
           </BCardHeader>
 
-          <!-- TABLE -->
+          <!-- TABLE & MODALS -->
           <BCardBody>
+
+            <!-- Delete Modal -->
+            <BModal
+                v-model="showDeleteModal"
+                title="Member löschen"
+                centered
+                hide-footer
+                modal-class="zoomIn"
+                class="v-modal-custom"
+            >
+              <p>
+                Willst du
+                <strong>{{ getMemberDisplayName(memberToDelete) }}</strong>
+                wirklich löschen?
+              </p>
+
+              <div class="text-end mt-3">
+                <BButton variant="light" @click="showDeleteModal = false">
+                  Abbrechen
+                </BButton>
+                <BButton variant="danger" @click="confirmDelete">
+                  Löschen
+                </BButton>
+              </div>
+            </BModal>
+
+            <!-- Disable Modal -->
+            <BModal
+                v-model="showDisableModal"
+                title="Mitglied deaktivieren"
+                centered
+                hide-footer
+                modal-class="zoomIn"
+                class="v-modal-custom"
+            >
+              <p>
+                Soll
+                <strong>{{ getMemberDisplayName(memberToDisable) }}</strong>
+                deaktiviert werden? Dieses Mitglied erscheint nicht mehr in der Liste.
+              </p>
+
+              <div class="text-end mt-3">
+                <BButton variant="light" @click="showDisableModal = false">
+                  Abbrechen
+                </BButton>
+                <BButton variant="warning" @click="confirmDisable">
+                  Deaktivieren
+                </BButton>
+              </div>
+            </BModal>
+
+            <!-- 🔵 Enable Modal (NEU) -->
+            <BModal
+                v-model="showEnableModal"
+                title="Mitglied aktivieren"
+                centered
+                hide-footer
+                modal-class="zoomIn"
+                class="v-modal-custom"
+            >
+              <p>
+                Soll
+                <strong>{{ getMemberDisplayName(memberToEnable) }}</strong>
+                wieder aktiviert werden?
+              </p>
+
+              <div class="text-end mt-3">
+                <BButton variant="light" @click="showEnableModal = false">
+                  Abbrechen
+                </BButton>
+                <BButton variant="success" @click="confirmEnable">
+                  Aktivieren
+                </BButton>
+              </div>
+            </BModal>
+
             <div v-if="loading" class="text-center p-5">
               <div class="spinner-border"></div>
             </div>
@@ -304,18 +459,78 @@ export default {
                 <thead class="table-light text-muted">
                 <tr>
                   <th v-for="col in columns" :key="col.id">{{ col.title }}</th>
+                  <th class="text-end">Aktionen</th>
                 </tr>
                 </thead>
 
                 <tbody>
-                <tr
-                    v-for="m in filteredMembers"
-                    :key="m.id"
-                    class="clickable-row"
-                    @click="goToDetail(m.id)"
-                >
-                  <td v-for="col in columns" :key="col.id">
-                    {{ m.fields[col.id] ?? '' }}
+                <tr v-for="m in filteredMembers" :key="m.id">
+                  <!-- Dynamische Felder -->
+                  <td
+                      v-for="col in columns"
+                      :key="col.id"
+                      @click="goToDetail(m.id)"
+                      class="clickable-cell"
+                  >
+                    <!-- Boolean TRUE -->
+                    <span v-if="m.fields[col.id] === true">
+                        <i class="ri-check-line text-success fw-bold"></i>
+                      </span>
+
+                    <!-- Boolean FALSE -->
+                    <span v-else-if="m.fields[col.id] === false">
+                        <i class="ri-close-line text-danger fw-bold"></i>
+                      </span>
+
+                    <!-- Normaler Text -->
+                    <span v-else>
+                        {{ m.fields[col.id] ?? '' }}
+                      </span>
+                  </td>
+
+                  <!-- Aktionen -->
+                  <td class="text-end">
+
+                    <!-- Edit -->
+                    <BButton
+                        size="sm"
+                        variant="soft-primary"
+                        class="me-2"
+                        @click.stop="editMember(m.id)"
+                    >
+                      <i class="ri-edit-line"></i>
+                    </BButton>
+
+                    <!-- Toggle Aktiv / Inaktiv -->
+                    <BButton
+                        v-if="m.active"
+                        size="sm"
+                        variant="soft-warning"
+                        class="me-2"
+                        @click.stop="disableMember(m)"
+                    >
+                      <i class="ri-user-unfollow-line"></i>
+                    </BButton>
+
+                    <BButton
+                        v-else
+                        size="sm"
+                        variant="soft-success"
+                        class="me-2"
+                        @click.stop="enableMember(m)"
+                    >
+                      <i class="ri-user-follow-line"></i>
+                    </BButton>
+
+                    <!-- Delete -->
+                    <BButton
+                        size="sm"
+                        variant="soft-danger"
+                        @click.stop="openDeleteModal(m)"
+                    >
+                      <i class="ri-delete-bin-line"></i>
+                    </BButton>
+
                   </td>
                 </tr>
                 </tbody>
@@ -333,7 +548,12 @@ export default {
                   <a class="page-link" href="#" @click="page > 1 && (page--)">Zurück</a>
                 </li>
 
-                <li v-for="p in pages" :key="p" class="page-item" :class="{ active: p === page }">
+                <li
+                    v-for="p in pages"
+                    :key="p"
+                    class="page-item"
+                    :class="{ active: p === page }"
+                >
                   <a class="page-link" href="#" @click="page = p">{{ p }}</a>
                 </li>
 
@@ -351,10 +571,11 @@ export default {
 </template>
 
 <style scoped>
-.clickable-row {
+.clickable-cell {
   cursor: pointer;
 }
-.clickable-row:hover {
+
+.clickable-cell:hover {
   background: rgba(67, 94, 190, 0.07);
 }
 
@@ -366,5 +587,9 @@ export default {
 .sortable-ghost {
   background-color: rgba(67, 94, 190, 0.15);
   border-radius: 8px;
+}
+
+.vertical-overlay {
+  display: none !important;
 }
 </style>

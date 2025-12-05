@@ -12,10 +12,38 @@ export default [
     },
     {
         path: "/members/:id",
-        name: "member-single",
-        component: () => import("../views/certs/members/index.vue"),
+        name: "members-single",
+        component: () => import("../views/certs/members/single.vue"),
         meta: {
-            title: "Members",
+            title: "Member Details",
+            authRequired: true,
+        },
+    },
+    {
+        path: "/members/create",
+        name: "members-create",
+        component: () => import("../views/certs/members/create.vue"),
+        meta: {
+            title: "Member Create",
+            authRequired: true,
+        },
+    },
+    {
+        path: "/members/edit/:id",
+        name: "member-edit",
+        component: () => import("../views/certs/members/create.vue"),
+        props: true,
+        meta: {
+            title: "Member Edit",
+            authRequired: true,
+        },
+    },
+    {
+        path: "/requirements",
+        name: "requirements",
+        component: () => import("../views/certs/requirements/index.vue"),
+        meta: {
+            title: "Requirements",
             authRequired: true,
         },
     },

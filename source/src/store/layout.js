@@ -2,9 +2,10 @@ export default {
     namespaced: true,
 
     state: {
-        layoutType: 'horizontal',
+        layoutType: 'vertical',
+        layoutTheme: 'saas',
         layoutWidth: 'fluid',
-        sidebarSize: 'lg',
+        sidebarSize: 'sm-hover',
         topbar: 'dark',
         mode: 'light',
         position: 'fixed',

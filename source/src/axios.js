@@ -68,7 +68,18 @@ axios.interceptors.request.use((config) => {
 // RESPONSE INTERCEPTOR
 // ===============================
 axios.interceptors.response.use(
-    (response) => response,
+    (response) => {
+
+        console.log(response.headers)
+        if (
+            response.headers['x-usersettings-reload'] === '1' ||
+            response.data?.reload_settings === true
+        ) {
+            store.commit('userSettings/setNeedsReload', true);
+        }
+
+        return response;
+    },
 
     (error) => {
         const jsend = error.response?.data

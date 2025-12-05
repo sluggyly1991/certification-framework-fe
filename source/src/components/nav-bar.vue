@@ -1,14 +1,11 @@
 <script>
 import { layoutMethods } from "@/state/helpers";
-import img1 from "../assets/images/products/img-1.png"
-import img2 from "../assets/images/products/img-2.png"
-import img3 from "../assets/images/products/img-3.png"
-import img4 from "../assets/images/products/img-6.png"
-import img5 from "../assets/images/products/img-5.png"
+import { mapState } from "vuex";
 
 import simplebar from "simplebar-vue";
 
 import i18n from "../i18n";
+import axios from "@/axios";
 
 /**
  * Nav-bar Component
@@ -16,95 +13,26 @@ import i18n from "../i18n";
 export default {
   data() {
     return {
-      cartItems: [
+      languages: [
         {
-          id: 1,
-          productImage: img1,
-          productName: "Branded T-Shirts",
-          productLink: "/ecommerce/product-details",
-          quantity: "10 x $32",
-          itemPrice: "320",
+          flag: require("@/assets/images/flags/de.svg"),
+          language: "de",
+          title: "Deutsch",
         },
         {
-          id: 2,
-          productImage: img2,
-          productName: "Bentwood Chair",
-          productLink: "/ecommerce/product-details",
-          quantity: "5 x $18",
-          itemPrice: "89",
-        },
-        {
-          id: 3,
-          productImage: img3,
-          productName: "Borosil Paper Cup",
-          productLink: "/ecommerce/product-details",
-          quantity: "3 x $250",
-          itemPrice: "750",
-        },
-        {
-          id: 4,
-          productImage: img4,
-          productName: "Gray Styled T-Shirt",
-          productLink: "/ecommerce/product-details",
-          quantity: "1 x $1250",
-          itemPrice: "1250",
-        },
-        {
-          id: 5,
-          productImage: img5,
-          productName: "Stillbird Helmet",
-          productLink: "/ecommerce/product-details",
-          quantity: "2 x $495",
-          itemPrice: "990",
-        },
-      ],
-
-      languages: [{
-        flag: require("@/assets/images/flags/us.svg"),
-        language: "en",
-        title: "English",
-      },
-      {
-        flag: require("@/assets/images/flags/spain.svg"),
-        language: "sp",
-        title: "Española",
-      },
-      {
-        flag: require("@/assets/images/flags/germany.svg"),
-        language: "gr",
-        title: "Deutsche",
-      },
-      {
-        flag: require("@/assets/images/flags/italy.svg"),
-        language: "it",
-        title: "italiana",
-      },
-      {
-        flag: require("@/assets/images/flags/russia.svg"),
-        language: "ru",
-        title: "русский",
-      },
-      {
-        flag: require("@/assets/images/flags/china.svg"),
-        language: "ch",
-        title: "中國人",
-      },
-      {
-        flag: require("@/assets/images/flags/french.svg"),
-        language: "fr",
-        title: "Français",
-      },
-      {
-        flag: require("@/assets/images/flags/ae.svg"),
-        language: "ar",
-        title: "Arabic",
-      },
+          flag: require("@/assets/images/flags/us.svg"),
+          language: "en",
+          title: "English",
+        }
       ],
       lan: i18n.locale,
       text: null,
       flag: null,
       value: null,
       myVar: 1,
+
+      certificates: [],
+      activeCertificate: null,
     };
   },
   components: {
@@ -113,11 +41,65 @@ export default {
 
   methods: {
     ...layoutMethods,
+
+    applyCertificateFromSettings() {
+      if (!this.userSettings || !this.userSettings.current_certificate) {
+        return;
+      }
+
+      const key = this.userSettings.current_certificate;
+
+      const found = this.certificates.find(c => c.key === key);
+      if (found) {
+        this.activeCertificate = found;
+      }
+    },
+    async loadCertificates() {
+      try {
+        const response = await axios.get("/company/certificates");
+        this.certificates = response.data.data || [];
+
+        const savedKey = localStorage.getItem("activeCertificateKey");
+
+        if (savedKey) {
+          const found = this.certificates.find(c => c.key === savedKey);
+          if (found) {
+            this.activeCertificate = found;
+          }
+        }
+
+        if (!this.activeCertificate && this.certificates.length > 0) {
+          this.activeCertificate = this.certificates[0];
+        }
+      } catch (e) {
+        console.error("Could not load certificates", e);
+      }
+    },
+
+    // 🔵 NEU: Zertifikat wechseln + Redirect (Variante C)
+    changeCertificate(cert) {
+      this.activeCertificate = cert;
+
+      this.$store.dispatch("userSettings/set", {
+        key: "current_certificate",
+        value: cert.key
+      });
+
+      axios.post("/settings/certificate/change", {
+        certificate_key: cert.key
+      });
+
+    },
+
     isCustomDropdown() {
       //Search bar
       var searchOptions = document.getElementById("search-close-options");
       var dropdown = document.getElementById("search-dropdown");
       var searchInput = document.getElementById("search-options");
+
+      if (!searchInput || !dropdown || !searchOptions) {
+        return;
+      }
 
       searchInput.addEventListener("focus", () => {
         var inputLength = searchInput.value.length;
@@ -166,11 +148,11 @@ export default {
 
       //For collapse horizontal menu
       if (
-        document.documentElement.getAttribute("data-layout") === "horizontal"
+          document.documentElement.getAttribute("data-layout") === "horizontal"
       ) {
         document.body.classList.contains("menu") ?
-          document.body.classList.remove("menu") :
-          document.body.classList.add("menu");
+            document.body.classList.remove("menu") :
+            document.body.classList.add("menu");
       }
 
       //For collapse vertical menu
@@ -179,13 +161,13 @@ export default {
         if (windowSize < 1025 && windowSize > 767) {
           document.body.classList.remove("vertical-sidebar-enable");
           document.documentElement.getAttribute("data-sidebar-size") == "sm" ?
-            document.documentElement.setAttribute("data-sidebar-size", "") :
-            document.documentElement.setAttribute("data-sidebar-size", "sm");
+              document.documentElement.setAttribute("data-sidebar-size", "") :
+              document.documentElement.setAttribute("data-sidebar-size", "sm");
         } else if (windowSize > 1025) {
           document.body.classList.remove("vertical-sidebar-enable");
           document.documentElement.getAttribute("data-sidebar-size") == "lg" ?
-            document.documentElement.setAttribute("data-sidebar-size", "sm") :
-            document.documentElement.setAttribute("data-sidebar-size", "lg");
+              document.documentElement.setAttribute("data-sidebar-size", "sm") :
+              document.documentElement.setAttribute("data-sidebar-size", "lg");
         } else if (windowSize <= 767) {
           document.body.classList.add("vertical-sidebar-enable");
           document.documentElement.setAttribute("data-sidebar-size", "lg");
@@ -195,8 +177,8 @@ export default {
       //Two column menu
       if (document.documentElement.getAttribute("data-layout") == "twocolumn") {
         document.body.classList.contains("twocolumn-panel") ?
-          document.body.classList.remove("twocolumn-panel") :
-          document.body.classList.add("twocolumn-panel");
+            document.body.classList.remove("twocolumn-panel") :
+            document.body.classList.add("twocolumn-panel");
       }
     },
     toggleMenu() {
@@ -208,10 +190,10 @@ export default {
     initFullScreen() {
       document.body.classList.toggle("fullscreen-enable");
       if (
-        !document.fullscreenElement &&
-        /* alternative standard method */
-        !document.mozFullScreenElement &&
-        !document.webkitFullscreenElement
+          !document.fullscreenElement &&
+          /* alternative standard method */
+          !document.mozFullScreenElement &&
+          !document.webkitFullscreenElement
       ) {
         // current working methods
         if (document.documentElement.requestFullscreen) {
@@ -220,7 +202,7 @@ export default {
           document.documentElement.mozRequestFullScreen();
         } else if (document.documentElement.webkitRequestFullscreen) {
           document.documentElement.webkitRequestFullscreen(
-            Element.ALLOW_KEYBOARD_INPUT
+              Element.ALLOW_KEYBOARD_INPUT
           );
         }
       } else {
@@ -260,11 +242,24 @@ export default {
   },
 
   computed: {
-    calculateTotalPrice() {
-      return this.cartItems.reduce((total, item) => total + parseFloat(item.itemPrice), 0).toFixed(2);
-    },
+    ...mapState({
+      userSettings: state => state.userSettings.settings,
+      userSettingsLoaded: state => state.userSettings.loaded,
+    }),
+  },
+  watch: {
+    userSettingsLoaded(loaded) {
+      if (loaded) {
+        this.applyCertificateFromSettings();
+      }
+    }
   },
   mounted() {
+    // 🔵 NEU: Zertifikate beim Laden holen
+    this.loadCertificates().then(() => {
+      this.applyCertificateFromSettings();
+    });
+
     if (process.env.VUE_APP_I18N_LOCALE) {
       this.flag = process.env.VUE_APP_I18N_LOCALE;
       this.languages.forEach((item) => {
@@ -278,13 +273,13 @@ export default {
       var pageTopbar = document.getElementById("page-topbar");
       if (pageTopbar) {
         document.body.scrollTop >= 50 || document.documentElement.scrollTop >= 50 ? pageTopbar.classList.add(
-          "topbar-shadow") : pageTopbar.classList.remove("topbar-shadow");
+            "topbar-shadow") : pageTopbar.classList.remove("topbar-shadow");
       }
     });
     if (document.getElementById("topnav-hamburger-icon"))
       document
-        .getElementById("topnav-hamburger-icon")
-        .addEventListener("click", this.toggleHamburgerMenu);
+          .getElementById("topnav-hamburger-icon")
+          .addEventListener("click", this.toggleHamburgerMenu);
 
     this.isCustomDropdown();
   },
@@ -318,7 +313,7 @@ export default {
           </div>
 
           <button type="button" class="btn btn-sm px-3 fs-16 header-item vertical-menu-btn topnav-hamburger"
-            id="topnav-hamburger-icon">
+                  id="topnav-hamburger-icon">
             <span class="hamburger-icon">
               <span></span>
               <span></span>
@@ -330,10 +325,10 @@ export default {
           <form class="app-search d-none d-md-block">
             <div class="position-relative">
               <input type="text" class="form-control" placeholder="Search..." autocomplete="off" id="search-options"
-                value="" />
+                     value="" />
               <span class="mdi mdi-magnify search-widget-icon"></span>
               <span class="mdi mdi-close-circle search-widget-icon search-widget-icon-close d-none"
-                id="search-close-options"></span>
+                    id="search-close-options"></span>
             </div>
             <div class="dropdown-menu dropdown-menu-lg" id="search-dropdown">
               <simplebar data-simplebar style="max-height: 320px">
@@ -411,9 +406,9 @@ export default {
 
         <div class="d-flex align-items-center">
           <BDropdown class="dropdown d-md-none topbar-head-dropdown header-item" variant="ghost-secondary" dropstart
-            :offset="{ alignmentAxis: 55, crossAxis: 15, mainAxis: 0 }"
-            toggle-class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle show  arrow-none"
-            menu-class="dropdown-menu-lg dropdown-menu-end p-0">
+                     :offset="{ alignmentAxis: 55, crossAxis: 15, mainAxis: 0 }"
+                     toggle-class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle show  arrow-none"
+                     menu-class="dropdown-menu-lg dropdown-menu-end p-0">
             <template #button-content>
               <i class="bx bx-search fs-22"></i>
             </template>
@@ -432,24 +427,24 @@ export default {
           </BDropdown>
 
           <BDropdown class="dropdown" variant="ghost-secondary" dropstart
-            :offset="{ alignmentAxis: 55, crossAxis: 15, mainAxis: -50 }"
-            toggle-class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle arrow-none"
-            menu-class="dropdown-menu-end">
+                     :offset="{ alignmentAxis: 55, crossAxis: 15, mainAxis: -50 }"
+                     toggle-class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle arrow-none"
+                     menu-class="dropdown-menu-end">
             <template #button-content> <img id="header-lang-img" src="@/assets/images/flags/us.svg" alt="Header Language"
-                height="20" class="rounded">
+                                            height="20" class="rounded">
             </template>
             <BLink href="javascript:void(0);" class="dropdown-item notify-item language py-2"
-              v-for="(entry, key) in languages" :data-lang="entry.language" :title="entry.title"
-              @click="setLanguage(entry.language, entry.title, entry.flag)" :key="key">
+                   v-for="(entry, key) in languages" :data-lang="entry.language" :title="entry.title"
+                   @click="setLanguage(entry.language, entry.title, entry.flag)" :key="key">
               <img :src="entry.flag" alt="user-image" class="me-2 rounded" height="18">
               <span class="align-middle">{{ entry.title }}</span>
             </BLink>
           </BDropdown>
 
           <BDropdown class="dropdown" variant="ghost-secondary" dropstart
-            :offset="{ alignmentAxis: 57, crossAxis: 0, mainAxis: -42 }"
-            toggle-class="btn-icon btn-topbar rounded-circle mode-layout ms-1 arrow-none"
-            menu-class="p-0 dropdown-menu-end">
+                     :offset="{ alignmentAxis: 57, crossAxis: 0, mainAxis: -42 }"
+                     toggle-class="btn-icon btn-topbar rounded-circle mode-layout ms-1 arrow-none"
+                     menu-class="p-0 dropdown-menu-end">
             <template #button-content>
               <i class="bx bx-category-alt fs-22"></i>
             </template>
@@ -512,98 +507,24 @@ export default {
             </div>
           </BDropdown>
 
-          <BDropdown variant="ghost-secondary" dropstart :offset="{ alignmentAxis: 57, crossAxis: 0, mainAxis: -42 }"
-            class="ms-1 dropdown" toggle-class="btn-icon btn-topbar rounded-circle mode-layout arrow-none"
-            menu-class="dropdown-menu-xl dropdown-menu-end p-0" text="Manual close (auto-close=false)"
-            auto-close="outside">
-            <template #button-content>
-              <i class="bx bx-shopping-bag fs-22"></i>
-              <span
-                class="position-absolute topbar-badge cartitem-badge fs-10 translate-middle badge rounded-pill bg-info">{{
-                  cartItems.length }} </span>
-            </template>
-
-            <div class="p-3 border-top-0 border-start-0 dropdown-head border-end-0 border-dashed border dropdown-menu-xl">
-              <BRow class="align-items-center">
-                <BCol>
-                  <h6 class="m-0 fs-16 fw-semibold"> My Cart</h6>
-                </BCol>
-                <BCol cols="auto">
-                  <BBadge variant="warning-subtle" class="bg-warning-subtle text-warning fs-13"><span
-                      class="cartitem-badge"> {{ cartItems.length }} </span>
-                    items</BBadge>
-                </BCol>
-              </BRow>
-            </div>
-            <simplebar data-simplebar style="max-height: 300px">
-              <div class="p-2">
-                <div class="text-center empty-cart" id="empty-cart" v-if="cartItems.length === 0">
-                  <div class="avatar-md mx-auto my-3">
-                    <div class="avatar-title bg-info-subtle text-info fs-36 rounded-circle">
-                      <i class="bx bx-cart"></i>
-                    </div>
-                  </div>
-                  <h5 class="mb-3">Your Cart is Empty!</h5>
-                  <router-link to="/ecommerce/products" class="btn btn-success w-md mb-3">Shop Now</router-link>
-                </div>
-                <div class="d-block dropdown-item dropdown-item-cart text-wrap px-3 py-2"
-                  v-for="(item, index) in cartItems" :key="index">
-                  <div class="d-flex align-items-center">
-                    <img :src="item.productImage" class="me-3 rounded-circle avatar-sm p-2 bg-light" />
-                    <div class="flex-grow-1">
-                      <h6 class="mt-0 mb-1 fs-14">
-                        <router-link :to="item.productLink" class="text-reset">{{ item.productName }}</router-link>
-                      </h6>
-                      <p class="mb-0 fs-12 text-muted">
-                        Quantity: <span>{{ item.quantity }}</span>
-                      </p>
-                    </div>
-                    <div class="px-2">
-                      <h5 class="m-0 fw-normal">$<span class="cart-item-price">{{ item.itemPrice }}</span></h5>
-                    </div>
-                    <div class="ps-2">
-                      <button type="button" class="btn btn-ghost-secondary btn-sm btn-icon remove-item-btn"
-                        @click="removeItem(item)">
-                        <i class="ri-close-fill fs-16"></i>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </simplebar>
-            <div v-if="cartItems.length" class="p-3 border-bottom-0 border-start-0 border-end-0 border-dashed border"
-              id="checkout-elem">
-              <div class="d-flex justify-content-between align-items-center pb-3">
-                <h5 class="m-0 text-muted">Total:</h5>
-                <div class="px-2">
-                  <h5 class="m-0" id="cart-item-total">${{ calculateTotalPrice }}</h5>
-                </div>
-              </div>
-
-              <router-link to="/ecommerce/checkout" class="btn btn-success text-center w-100">
-                Checkout
-              </router-link>
-            </div>
-          </BDropdown>
-
           <div class="ms-1 header-item d-none d-sm-flex">
             <BButton type="button" variant="ghost-secondary" class="btn-icon btn-topbar rounded-circle"
-              data-toggle="fullscreen" @click="initFullScreen">
+                     data-toggle="fullscreen" @click="initFullScreen">
               <i class="bx bx-fullscreen fs-22"></i>
             </BButton>
           </div>
 
           <div class="ms-1 header-item d-none d-sm-flex">
             <BButton type="button" variant="ghost-secondary" class="btn-icon btn-topbar rounded-circle light-dark-mode"
-              @click="toggleDarkMode">
+                     @click="toggleDarkMode">
               <i class="bx bx-moon fs-22"></i>
             </BButton>
           </div>
 
           <BDropdown variant="ghost-dark" dropstart class="ms-1 dropdown"
-            :offset="{ alignmentAxis: 57, crossAxis: 0, mainAxis: -42 }"
-            toggle-class="btn-icon btn-topbar rounded-circle arrow-none" id="page-header-notifications-dropdown"
-            menu-class="dropdown-menu-lg dropdown-menu-end p-0" auto-close="outside">
+                     :offset="{ alignmentAxis: 57, crossAxis: 0, mainAxis: -42 }"
+                     toggle-class="btn-icon btn-topbar rounded-circle arrow-none" id="page-header-notifications-dropdown"
+                     menu-class="dropdown-menu-lg dropdown-menu-end p-0" auto-close="outside">
             <template #button-content>
               <i class='bx bx-bell fs-22'></i>
               <span class="position-absolute topbar-badge fs-10 translate-middle badge rounded-pill bg-danger"><span
@@ -657,7 +578,7 @@ export default {
                   <div class="text-reset notification-item d-block dropdown-item position-relative">
                     <div class="d-flex">
                       <img src="@/assets/images/users/avatar-2.jpg" class="me-3 rounded-circle avatar-xs flex-shrink-0"
-                        alt="user-pic" />
+                           alt="user-pic" />
                       <div class="flex-grow-1">
                         <BLink href="#!" class="stretched-link">
                           <h6 class="mt-0 mb-1 fs-13 fw-semibold">
@@ -706,7 +627,7 @@ export default {
                   <div class="text-reset notification-item d-block dropdown-item position-relative">
                     <div class="d-flex">
                       <img src="@/assets/images/users/avatar-8.jpg" class="me-3 rounded-circle avatar-xs flex-shrink-0"
-                        alt="user-pic" />
+                           alt="user-pic" />
                       <div class="flex-grow-1">
                         <BLink href="#!" class="stretched-link">
                           <h6 class="mt-0 mb-1 fs-13 fw-semibold">
@@ -739,12 +660,12 @@ export default {
               </BTab>
 
               <BTab title="Messages" class="tab-pane fade py-2 ps-2" id="messages-tab" role="tabpanel"
-                aria-labelledby="messages-tab">
+                    aria-labelledby="messages-tab">
                 <simplebar data-simplebar style="max-height: 300px" class="pe-2">
                   <div class="text-reset notification-item d-block dropdown-item">
                     <div class="d-flex">
                       <img src="@/assets/images/users/avatar-3.jpg" class="me-3 rounded-circle avatar-xs"
-                        alt="user-pic" />
+                           alt="user-pic" />
                       <div class="flex-grow-1">
                         <BLink href="#!" class="stretched-link">
                           <h6 class="mt-0 mb-1 fs-13 fw-semibold">
@@ -769,7 +690,7 @@ export default {
                   <div class="text-reset notification-item d-block dropdown-item">
                     <div class="d-flex">
                       <img src="@/assets/images/users/avatar-2.jpg" class="me-3 rounded-circle avatar-xs"
-                        alt="user-pic" />
+                           alt="user-pic" />
                       <div class="flex-grow-1">
                         <BLink href="#!" class="stretched-link">
                           <h6 class="mt-0 mb-1 fs-13 fw-semibold">
@@ -796,7 +717,7 @@ export default {
                   <div class="text-reset notification-item d-block dropdown-item">
                     <div class="d-flex">
                       <img src="@/assets/images/users/avatar-6.jpg" class="me-3 rounded-circle avatar-xs"
-                        alt="user-pic" />
+                           alt="user-pic" />
                       <div class="flex-grow-1">
                         <BLink href="#!" class="stretched-link">
                           <h6 class="mt-0 mb-1 fs-13 fw-semibold">
@@ -823,7 +744,7 @@ export default {
                   <div class="text-reset notification-item d-block dropdown-item">
                     <div class="d-flex">
                       <img src="@/assets/images/users/avatar-8.jpg" class="me-3 rounded-circle avatar-xs"
-                        alt="user-pic" />
+                           alt="user-pic" />
                       <div class="flex-grow-1">
                         <BLink href="#!" class="stretched-link">
                           <h6 class="mt-0 mb-1 fs-13 fw-semibold">
@@ -870,12 +791,60 @@ export default {
             </BTabs>
           </BDropdown>
 
+          <BDropdown
+              variant="ghost-secondary"
+              dropstart
+              class="ms-1 dropdown"
+              toggle-class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle arrow-none"
+              menu-class="dropdown-menu-end"
+              toggle-tag="button"
+              toggle-type="button"
+              @click.stop
+              @mousedown.stop
+          >
+            <template #button-content>
+              <span class="d-flex align-items-center fw-semibold">
+                <span class="ms-1 d-none d-md-inline-block">
+                  <i class="bx bx-medal fs-22"></i>
+                </span>
+              </span>
+            </template>
+
+            <h6 class="dropdown-header">Zertifikat auswählen</h6>
+
+            <button
+                v-for="cert in certificates"
+                :key="cert.key"
+                class="dropdown-item d-flex align-items-center"
+                @click="changeCertificate(cert)"
+            >
+              <i
+                  class="ri-checkbox-circle-line text-success me-2"
+                  v-if="activeCertificate && activeCertificate.key === cert.key"
+              ></i>
+              <i
+                  class="ri-circle-line text-muted me-2"
+                  v-else
+              ></i>
+
+              <span>{{ cert.name }}</span>
+            </button>
+
+            <div class="dropdown-divider"></div>
+
+            <button class="dropdown-item text-primary">
+              <i class="ri-add-line me-2"></i>
+              Neues Zertifikat hinzufügen
+            </button>
+          </BDropdown>
+          <!-- 🔵 ENDE Zertifikats-Switcher -->
+
           <BDropdown variant="link" class="ms-sm-3 header-item topbar-user" toggle-class="rounded-circle arrow-none"
-            menu-class="dropdown-menu-end" :offset="{ alignmentAxis: -14, crossAxis: 0, mainAxis: 0 }">
+                     menu-class="dropdown-menu-end" :offset="{ alignmentAxis: -14, crossAxis: 0, mainAxis: 0 }">
             <template #button-content>
               <span class="d-flex align-items-center">
                 <img class="rounded-circle header-profile-user" src="@/assets/images/users/avatar-1.jpg"
-                  alt="Header Avatar">
+                     alt="Header Avatar">
                 <span class="text-start ms-xl-2">
                   <span class="d-none d-xl-inline-block ms-1 fw-medium user-name-text">Edward
                     Diana</span>
