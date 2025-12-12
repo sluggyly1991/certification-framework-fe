@@ -47,6 +47,24 @@ export default [
             authRequired: true,
         },
     },
+    {
+        path: "/requirements/:key",
+        name: "requirements-single",
+        component: () => import("../views/certs/requirements/form.vue"),
+        meta: {
+            title: "Requirements",
+            authRequired: true,
+        },
+    },
+    {
+        path: "/tasks/create",
+        name: "tasks-create",
+        component: () => import("../views/certs/Components/TaskSeriesForm.vue"),
+        meta: {
+            title: "Task Series Create",
+            authRequired: true,
+        }
+    },
 
     // OLD ROUTES
 

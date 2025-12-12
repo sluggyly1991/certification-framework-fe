@@ -21,15 +21,18 @@ export default {
     return {
       loading: true,
       error: null,
+
       certificate: null,
       description: null,
-      activeLevel: null,
 
       requirements: [],
       grouped: {},
+      valuesMap: {},
 
-      values: [],
-      valuesMap: {}, // Map für schnellen Zugriff auf completed/validated
+      // Filter states
+      filterInput: false,
+      filterCompleted: false,
+      filterNotValidated: false,
     };
   },
 
@@ -39,65 +42,69 @@ export default {
   },
 
   methods: {
-    /** Lade die Stammdaten der Anforderungen */
     async fetchRequirements() {
-      this.loading = true;
       try {
         const res = await axios.get("/requirements");
         const data = res.data.data;
 
         this.certificate = data.certificate;
         this.description = data.description;
-        this.activeLevel = data.active_level;
         this.requirements = data.requirements;
 
-        // Gruppiert nach "struktur", "versorgung", "bericht" usw.
+        // Gruppierung nach Top-Level (z. B. struktur, versorgung, bericht)
         this.grouped = this.groupByTopLevel(this.requirements);
+
       } catch (e) {
         this.error = e;
       }
       this.loading = false;
     },
 
-    /** Lade die gespeicherten Werte der Anforderungen */
     async fetchValues() {
       try {
         const res = await axios.get("/requirements/values");
-        this.values = res.data.data.values;
+        const list = res.data.data.values;
 
-        // Map: { netz_name: {...}, therapiekoordination: {...} }
+        // Map für schnellen Zugriff
         this.valuesMap = Object.fromEntries(
-            this.values.map(v => [v.key, v])
+            list.map(v => [v.key, v])
         );
+
       } catch (e) {
         console.error("Fehler beim Laden der Values", e);
       }
     },
 
-    /** Gruppierung nach dem ersten Punkt von group */
     groupByTopLevel(list) {
       const groups = {};
       list.forEach(req => {
-        const top = req.group.split(".")[0]; // "struktur", "versorgung", ...
+        const top = req.group.split(".")[0];
         if (!groups[top]) groups[top] = [];
         groups[top].push(req);
       });
       return groups;
     },
 
-    /** Icon passend zum Requirement-Typ */
+    filteredGroup(items) {
+      return items.filter(req => {
+        const v = this.valuesMap[req.key] || {};
+
+        if (this.filterInput && !req.input) return false;
+        if (this.filterCompleted && !v.completed) return false;
+        if (this.filterNotValidated && v.validated) return false; // nicht validierte markieren
+
+        return true;
+      });
+    },
+
     getTypeIcon(req) {
       if (req.type === "form") return "ri-pencil-line text-primary";
       if (req.type === "upload") return "ri-upload-2-line text-success";
       return "ri-information-line text-muted"; // auto
     },
 
-    /** Farben für Level-Badge */
-    getLevelColor(level) {
-      if (level === "basis") return "primary";
-      if (level === "stufe1") return "warning";
-      if (level === "stufe2") return "danger";
-      return "secondary";
+    goToSingle(req) {
+      this.$router.push(`/requirements/${req.key}`);
     }
   },
 
@@ -129,19 +136,56 @@ export default {
     <BRow>
       <BCol lg="12">
         <BCard no-body>
+
+          <!-- HEADER -->
           <BCardHeader>
-            <h4 class="mb-1">{{ certificate }}</h4>
-            <p class="text-muted mb-0">{{ description }}</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h4 class="mb-1">{{ certificate }}</h4>
+                <p class="text-muted mb-0">{{ description }}</p>
+              </div>
+
+              <!-- FILTER -->
+              <div class="d-flex align-items-center gap-4">
+
+                <label class="form-check form-switch mb-0">
+                  <input
+                      class="form-check-input"
+                      type="checkbox"
+                      v-model="filterInput"
+                  >
+                  <span class="form-check-label">Nur Eingaben</span>
+                </label>
+
+                <label class="form-check form-switch mb-0">
+                  <input
+                      class="form-check-input"
+                      type="checkbox"
+                      v-model="filterCompleted"
+                  >
+                  <span class="form-check-label">Nur Completed</span>
+                </label>
+
+                <label class="form-check form-switch mb-0">
+                  <input
+                      class="form-check-input"
+                      type="checkbox"
+                      v-model="filterNotValidated"
+                  >
+                  <span class="form-check-label">Nur nicht validierte</span>
+                </label>
+
+              </div>
+            </div>
           </BCardHeader>
 
+          <!-- BODY -->
           <BCardBody>
 
-            <!-- LOADING -->
             <div v-if="loading" class="text-center p-5">
               <div class="spinner-border"></div>
             </div>
 
-            <!-- ERROR -->
             <div v-if="error" class="alert alert-danger">
               Fehler beim Laden der Anforderungen.
             </div>
@@ -150,43 +194,39 @@ export default {
             <div v-if="!loading">
               <BTabs nav-class="mb-3" content-class="mt-3" pills justified>
 
-                <!-- EIN TAB PRO GROUP -->
                 <BTab
                     v-for="(items, group) in grouped"
                     :key="group"
                 >
-                  <!-- TAB TITLE -->
                   <template #title>
                     {{ group.charAt(0).toUpperCase() + group.slice(1) }}
-                    <span class="badge bg-primary ms-2">{{ items.length }}</span>
+                    <span class="badge bg-primary ms-2">
+                      {{ filteredGroup(items).length }}
+                    </span>
                   </template>
 
-                  <!-- INHALT DES TABS -->
+                  <!-- REQUIREMENTS in diesem TAB -->
                   <div
-                      v-for="req in items"
+                      v-for="req in filteredGroup(items)"
                       :key="req.key"
-                      class="p-3 border rounded mb-3 bg-light"
+                      class="p-3 border rounded mb-3 bg-light requirement-card"
+                      :class="{ clickable: req.input }"
+                      @click="req.input && goToSingle(req)"
                   >
 
                     <div class="d-flex justify-content-between align-items-start">
                       <div>
-                        <h6 class="mb-1">
+                        <h6 class="mb-1 d-flex align-items-center">
                           <i :class="getTypeIcon(req)" class="me-2"></i>
                           {{ req.title }}
                         </h6>
                         <p class="text-muted small mb-0">{{ req.description }}</p>
                       </div>
-
-                      <!-- LEVEL BADGE -->
-                      <BBadge :variant="getLevelColor(req.level)">
-                        {{ req.level }}
-                      </BBadge>
                     </div>
 
                     <!-- STATUS BADGES -->
                     <div class="mt-2">
 
-                      <!-- COMPLETED -->
                       <BBadge
                           v-if="valuesMap[req.key]?.completed"
                           variant="success"
@@ -195,7 +235,6 @@ export default {
                         Completed
                       </BBadge>
 
-                      <!-- VALIDATED -->
                       <BBadge
                           v-if="valuesMap[req.key]?.validated"
                           variant="info"
@@ -219,7 +258,11 @@ export default {
 </template>
 
 <style scoped>
-.bg-light {
-  background: #f8f9fa !important;
+.requirement-card.clickable {
+  cursor: pointer;
+}
+.requirement-card.clickable:hover {
+  background: #eef3ff;
+  border-color: #bfcaff;
 }
 </style>
