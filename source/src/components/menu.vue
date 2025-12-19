@@ -413,31 +413,6 @@ export default {
                 </div>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="#sidebarTasks" data-bs-toggle="collapse" role="button" aria-expanded="false"
-                  aria-controls="sidebarTasks" data-key="t-tasks">
-                  {{ $t("t-tasks") }}
-                </a>
-                <div class="collapse menu-dropdown" id="sidebarTasks">
-                  <ul class="nav nav-sm flex-column">
-                    <li class="nav-item">
-                      <router-link to="/apps/tasks-kanban" class="nav-link" data-key="t-kanbanboard">
-                        {{ $t("t-kanbanboard") }}
-                      </router-link>
-                    </li>
-                    <li class="nav-item">
-                      <router-link to="/apps/tasks-list-view" class="nav-link" data-key="t-list-view">
-                        {{ $t("t-list-view") }}
-                      </router-link>
-                    </li>
-                    <li class="nav-item">
-                      <router-link to="/apps/tasks-details" class="nav-link" data-key="t-task-details">
-                        {{ $t("t-task-details") }}
-                      </router-link>
-                    </li>
-                  </ul>
-                </div>
-              </li>
-              <li class="nav-item">
                 <a class="nav-link" href="#sidebarCRM" data-bs-toggle="collapse" role="button" aria-expanded="false"
                   aria-controls="sidebarCRM" data-key="t-crm">
                   {{ $t("t-crm") }}
@@ -741,6 +716,37 @@ export default {
         </li>
 
         <li class="nav-item">
+          <a class="nav-link menu-link" href="#sidebarTasks" data-bs-toggle="collapse" role="button" aria-expanded="false"
+             aria-controls="sidebarTasks">
+            <i class="bx bx-stopwatch"></i>
+            <span data-key="t-tasks">{{
+                $t("t-tasks")
+              }}</span>
+          </a>
+          <div class="collapse menu-dropdown" id="sidebarTasks">
+            <ul class="nav nav-sm flex-column">
+              <li class="nav-item">
+                <router-link to="/tasks/series" class="nav-link" data-key="t-tasks-list">
+                  {{ $t("t-tasks-list") }}
+                </router-link>
+              </li>
+              <li class="nav-item">
+                <router-link to="/tasks/series/create" class="nav-link" data-key="t-tasks-list">
+                  {{ $t("t-tasks-create") }}
+                </router-link>
+              </li>
+            </ul>
+          </div>
+        </li>
+
+        <li class="nav-item">
+          <router-link to="/requirements" class="nav-link menu-link">
+            <i class="bx bx-clipboard"></i>
+            <span data-key="t-requirements">{{ $t("t-requirements") }}</span>
+          </router-link>
+        </li>
+
+        <li class="nav-item">
           <a class="nav-link menu-link" href="#sidebarPages" data-bs-toggle="collapse" role="button" aria-expanded="false"
             aria-controls="sidebarPages">
             <i class="bx bx-file"></i>
@@ -881,6 +887,27 @@ export default {
           <i class="ri-more-fill"></i>
           <span data-key="t-components">{{ $t("t-components") }}</span>
         </li>
+
+        <li class="nav-item">
+          <a class="nav-link menu-link" href="#sidebarRoles" data-bs-toggle="collapse" role="button"
+             aria-expanded="false" aria-controls="sidebarRoles">
+            <i class="bx bx-briefcase-alt"></i>
+            <span data-key="t-roles">{{ $t("t-roles") }}</span>
+          </a>
+          <div class="collapse menu-dropdown" id="sidebarRoles">
+            <ul class="nav nav-sm flex-column">
+              <li class="nav-item">
+                <router-link to="/roles" class="nav-link" data-key="t-roles">
+                  {{ $t("t-roles") }}</router-link>
+              </li>
+              <li class="nav-item">
+                <router-link to="/roles/create" class="nav-link" data-key="t-roles-create">{{ $t("t-roles-create") }}
+                </router-link>
+              </li>
+            </ul>
+          </div>
+        </li>
+
         <li class="nav-item">
           <a class="nav-link menu-link" href="#sidebarUI" data-bs-toggle="collapse" role="button" aria-expanded="false"
             aria-controls="sidebarUI">

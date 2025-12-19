@@ -217,5 +217,18 @@
   "t-members": "Mitglieder",
   "t-members-list": "Mitgliederliste",
   "t-members-single": "Einzelmitglied",
-  "t-members-create": "Mitglied erstellen"
+  "t-members-create": "Mitglied erstellen",
+  "t-requirements": "Anforderungen",
+  "t-roles": "Rollen",
+  "t-create-role": "Rolle hinzufügen",
+  "t-role-name": "Rollenname",
+  "t-role-name-placeholder": "Rollenname eingeben..",
+  "t-cancel": "Abbrechen",
+  "t-save": "Speichern",
+  "t-create": "Erstellen",
+  "t-roles-create": "Rollen erstellen",
+  "t-users": "Benutzer",
+  "t-assign-users-to-role": "Benutzerrollen zuweisen",
+  "t-add-user": "Benutzer hinzufügen"
+
 }

@@ -57,14 +57,33 @@ export default [
         },
     },
     {
-        path: "/tasks/create",
-        name: "tasks-create",
+        path: "/tasks/series",
+        name: "task-series-list",
+        component: () => import("../views/certs/Components/TaskSeriesTable.vue"),
+        meta: {
+            title: "Task Series Overview",
+            authRequired: true,
+        }
+    },
+    {
+        path: "/tasks/series/create",
+        name: "task-series-create",
         component: () => import("../views/certs/Components/TaskSeriesForm.vue"),
         meta: {
             title: "Task Series Create",
             authRequired: true,
         }
     },
+    {
+        path: "/tasks/series/:id",
+        name: "task-series-single",
+        component: () => import("../views/certs/Components/TaskSeriesSingle.vue"),
+        meta: {
+            title: "Task Series Single",
+            authRequired: true,
+        }
+    },
+
 
     // OLD ROUTES
 
@@ -103,13 +122,71 @@ export default [
         component: () => import("../views/dashboard/ecommerce/index.vue"),
     },
   {
-    path: "/dashboard/crypto",
-    name: "dashboard-crypto",
+    path: "/roles",
+    name: "roles",
     meta: {
-      title: "Crypto",
+      title: "Roles",
       authRequired: true,
     },
-    component: () => import("../views/dashboard/crypto/index"),
+    component: () => import("../views/certs/Components/RolesTable.vue"),
+  },
+  {
+    path: "/roles/:id/permissions",
+    name: "roles-permissions",
+    meta: {
+      title: "Roles Permissions",
+      authRequired: true,
+    },
+    component: () => import("../views/certs/Components/RolePermissions.vue"),
+  },
+  {
+    path: "/roles/create",
+    name: "roles-create",
+    meta: {
+      title: "Roles Create",
+      authRequired: true,
+    },
+    component: () => import("../views/certs/Components/RoleCreate.vue"),
+  },
+  {
+    path: "/roles/:id/user",
+    name: "roles-users",
+    meta: {
+      title: "Roles User",
+      authRequired: true,
+    },
+    component: () => import("../views/certs/Components/RoleUser.vue"),
+  },
+  {
+    path: "/user",
+    name: "user-list",
+    meta: {
+      title: "User List",
+      authRequired: true,
+    },
+    component: () => import("../views/certs/Components/UserList.vue"),
+  },
+  {
+    path: "/user/create",
+    name: "user-create",
+    meta: {
+      title: "User Create",
+      authRequired: true,
+    },
+    component: () => import("../views/certs/Components/UserCreate.vue"),
+  },
+  {
+    path: "/members/:id/user",
+    component: () => import("../views/certs/Components/MemberUserAssign.vue")
+  },
+  {
+    path: "/",
+    name: "dashboard",
+    meta: {
+      title: "Dashboard",
+      authRequired: true,
+    },
+    component: () => import("../views/certs/Components/Dashboard.vue"),
   },
   {
     path: "/dashboard/projects",

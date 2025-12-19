@@ -180,9 +180,15 @@ export default {
 
 <template>
   <Layout>
-    <PageHeader title="Serienaufgabe erstellen" />
+    <PageHeader
+        title="Aufgabe erstellen"
+        :breadcrumbs="[
+        { label: 'Dashboard', to: '/' },
+        { label: 'Aufgaben', to: '/tasks/series' },
+        { label: 'Aufgabe erstellen', active: true }
+      ]"
+    />
 
-    <!-- ✔ ZENTRIERT, NICHT VOLLE BREITE -->
     <BRow>
       <BCol lg="8" xl="7" class="mx-auto">
         <BCard>
